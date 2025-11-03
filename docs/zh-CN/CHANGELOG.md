@@ -8,3 +8,10 @@
   - 复制：将 `docs/FEATURES.md`、`docs/FAQ.md` → `docs/en-US/FEATURES.md`、`docs/en-US/FAQ.md`
   - 语言入口：新增 `docs/zh-CN/README.md`（基于根 README 调整相对路径）
 
+
+## 0.2.0（2025-11-04）
+
+- 新增：结构化提示词（主题行 + 要点）
+- 改进：verbose 分段日志（含 trace_id）
+- 改进：提交信息以等号分隔块高亮显示，去除外层引号
+- 兼容性：无破坏性改动
