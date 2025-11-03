@@ -15,7 +15,7 @@
 
 </div>
 
-言語: [English](../en/README.md) | [中文](../../README.md)
+言語: [English](../en-US/README.md) | [中文](../zh-CN/README.md)
 
 Claude Auto-Commit は、Git の変更内容を解析し、Claude Code SDK を用いて高品質でコンテキストに即したコミットメッセージを生成します。
 
@@ -113,4 +113,3 @@ MIT ライセンス。詳細は [LICENSE](../../LICENSE) をご参照くださ�
 ---
 
 開発者コミュニティへの感謝を込めて ❤️
-

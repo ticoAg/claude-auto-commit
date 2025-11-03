@@ -1,4 +1,11 @@
 #!/usr/bin/env node
+/**
+ * 中文模块说明：
+ *  - 本文件为 SDK 版主实现入口，提供 AI 生成提交信息的完整流程。
+ *  - 设计遵循“同步优先、最小副作用”，通过并行 Git 命令与结果缓存兼顾性能。
+ *  - 关键节点输出可选的结构化日志（--verbose），日志包含 trace_id 便于问题追踪。
+ *  - 仅对注释与文档进行增强，保持对外行为与 CLI 参数兼容，不改动核心逻辑。
+ */
 import { query } from "@anthropic-ai/claude-code";
 import { exec } from "child_process";
 import { promisify } from "util";
@@ -12,6 +19,14 @@ const CLI_VERSION = "v0.1.6";
 
 const execAsync = promisify(exec);
 
+/**
+ * ClaudeAutoCommit
+ *
+ * 中文类注释：封装“配置读取 → 变更感知 → 提示词构造 → 文本生成 → 提交/推送”的主流程。
+ * - 可通过构造参数或配置文件覆盖默认行为；
+ * - 运行期维护轻量级缓存（_gitCache/_configCache），减少重复 IO；
+ * - 发生错误时抛出具备中文语义的异常信息，便于最终用户理解。
+ */
 class ClaudeAutoCommit {
 	constructor(options = {}) {
 		this.language = options.language || "en";
@@ -25,19 +40,19 @@ class ClaudeAutoCommit {
 		this.maxRetries = options.maxRetries || 3;
 		this.timeout = options.timeout || 30000;
 		this.traceId = options.traceId || randomUUID();
-		// Cache for git command results to avoid duplicate calls
+		// 缓存：Git 命令结果，避免在单次运行内重复执行
 		this._gitCache = {};
-		// Cache for config file to avoid repeated filesystem access
+		// 缓存：配置文件内容，减少频繁文件读取
 		this._configCache = null;
 		this._configCacheTime = 0;
-		this.CONFIG_CACHE_TTL = 5 * 60 * 1000; // 5分間キャッシュ
+		this.CONFIG_CACHE_TTL = 5 * 60 * 1000; // 配置缓存 5 分钟
 		// 记录系统上已安装的 `claude` 可执行入口路径（在预检或配置读取时赋值）
 		this.claudeExecutablePath = null;
 		// 是否在提交信息末尾附加来源标识，默认开启
 		this.appendSignature = true;
 	}
 
-	// パフォーマンス測定ユーティリティ
+	// 性能测量工具：用于 --verbose 模式输出阶段耗时（毫秒）
 	async measure(name, fn) {
 		if (!this.verbose) {
 			return await fn();
@@ -46,7 +61,7 @@ class ClaudeAutoCommit {
 		const start = process.hrtime.bigint();
 		const result = await fn();
 		const end = process.hrtime.bigint();
-		const duration = Number(end - start) / 1e6; // ミリ秒
+		const duration = Number(end - start) / 1e6; // 毫秒
 
 		console.log(`⏱️  ${name}: ${duration.toFixed(2)}ms`);
 		return result;
@@ -201,6 +216,12 @@ class ClaudeAutoCommit {
 	}
 
 	async checkGitRepository() {
+		/**
+		 * 中文说明：校验当前工作目录是否位于 Git 仓库中。
+		 * - 成功：返回 true；
+		 * - 失败：抛出带中文提示的异常；
+		 * - 设计：不依赖 git 工作树状态，仅检查 .git 目录是否存在。
+		 */
 		try {
 			await execAsync("git rev-parse --git-dir");
 			return true;
@@ -216,7 +237,7 @@ class ClaudeAutoCommit {
 			const { stdout: status } = await execAsync("git status --porcelain", {
 				maxBuffer: 1024 * 1024,
 			});
-			// Cache the status result for potential reuse in getGitChanges()
+			// 缓存：status 结果，供 getGitChanges() 复用，避免重复执行
 			this._gitCache.status = status;
 			return status.trim().length > 0;
 		} catch (error) {
@@ -225,8 +246,14 @@ class ClaudeAutoCommit {
 	}
 
 	async getGitChanges() {
+		/**
+		 * 中文说明：并行收集 Git 变更信息，组装为文本片段以供提示词使用。
+		 * - 并行：status/branch/diff（staged/unstaged），必要时附加 --stat 汇总；
+		 * - 缓存：尽可能复用前序阶段的查询结果（如 branch/status）；
+		 * - 截断：控制返回文本大小，避免提示词过长导致生成耗时或失败。
+		 */
 		try {
-			// Use cached status if available, otherwise execute all commands in parallel
+			// 若有缓存则直接使用；否则并行执行相关命令以提升性能
 			let statusPromise;
 			if (this._gitCache.status !== undefined) {
 				statusPromise = Promise.resolve({
@@ -238,7 +265,7 @@ class ClaudeAutoCommit {
 				});
 			}
 
-			// Execute git commands in parallel for better performance
+			// 并行执行 Git 命令以提升整体性能
 			const [statusResult, branchResult, diffResult, diffUnstagedResult] =
 				await Promise.all([
 					statusPromise,
@@ -258,7 +285,7 @@ class ClaudeAutoCommit {
 			const diff = diffResult.stdout;
 			const diffUnstaged = diffUnstagedResult.stdout;
 
-			// Cache branch result for potential reuse in pushChanges()
+			// 缓存：当前分支名，供 pushChanges() 复用
 			this._gitCache.branch = branch;
 
 			if (!status.trim()) {
@@ -267,7 +294,7 @@ class ClaudeAutoCommit {
 
 			let changes = `Branch: ${branch.trim()}\n\nStatus:\n${status}\n\n`;
 
-			// Prepare promises for stats commands if needed
+			// 预构建 --stat 的 Promise（仅在需要时）
 			const statsPromises = [];
 			const statsTypes = [];
 
@@ -289,7 +316,7 @@ class ClaudeAutoCommit {
 				statsTypes.push("unstaged");
 			}
 
-			// Execute stats commands in parallel if any
+			// 并行执行统计命令（如有）
 			if (statsPromises.length > 0) {
 				const statsResults = await Promise.allSettled(statsPromises);
 
@@ -311,7 +338,7 @@ class ClaudeAutoCommit {
 				});
 			}
 
-			// 大きすぎる場合は切り詰める
+			// 过长时进行截断，避免提示词爆炸
 			if (changes.length > 4000) {
 				changes = changes.substring(0, 4000) + "\n... (truncated for brevity)";
 			}
@@ -323,6 +350,13 @@ class ClaudeAutoCommit {
 	}
 
 	async generateCommitMessage(changes) {
+		/**
+		 * 中文说明：调用 Claude Code SDK 生成提交信息。
+		 * - 输入：变更文本片段（由 getGitChanges() 产生）；
+		 * - 超时与重试：单次 30s 超时，最多 3 次（指数退避）；
+		 * - 返回：纯文本提交信息；
+		 * - 异常：在达到最大重试后抛出错误。
+		 */
 		const prompt = this.buildPrompt(changes);
 
 		for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
@@ -350,8 +384,8 @@ class ClaudeAutoCommit {
 					},
 				})) {
 					messages.push(message);
-					// 在 verbose 模式下输出 Claude Code 的关键过程日志，便于排障
-					// 注意：日志内容做适度截断避免刷屏
+						// 在 verbose 模式下输出 Claude Code 的关键过程日志，便于排障
+						// 注意：日志内容做适度截断避免刷屏
 					if (this.verbose) {
 						try {
 							const m = message;
@@ -393,13 +427,13 @@ class ClaudeAutoCommit {
 
 				clearTimeout(timeoutId);
 
-				// 結果を取得
+				// 结果解析优先取 result
 				const resultMessage = messages.find((msg) => msg.type === "result");
 				if (resultMessage && resultMessage.result) {
 					return resultMessage.result.trim();
 				}
 
-				// assistantメッセージからも試行
+				// 回退：尝试从 assistant 消息提取文本
 				const assistantMessage = messages.find(
 					(msg) => msg.type === "assistant"
 				);
@@ -437,6 +471,13 @@ class ClaudeAutoCommit {
 	}
 
 	buildPrompt(changes) {
+		/**
+		 * 中文说明：根据语言/规范/表情/类型拼装提示词，保证只输出“提交信息本身”。
+		 * - `language`: en/ja/zh 三套模板；
+		 * - `conventionalCommit`: 是否启用规范前缀；
+		 * - `useEmoji`: 是否允许表情；
+		 * - `commitType`: 当指定时，固定使用该类型；
+		 */
 		let prompt;
 
 		if (this.language === "ja") {
@@ -496,6 +537,11 @@ class ClaudeAutoCommit {
 	 * 仅做可执行性校验，不检查安装来源或详细配置。
 	 */
     async checkClaudeCommand() {
+        /**
+         * 中文说明：解析并校验 `claude` 可执行程序路径。
+         * - 优先使用配置项 `claudePath`；否则通过 PATH 解析；
+         * - 成功：记录路径并返回 true；失败：抛出带中文提示的异常；
+         */
         try {
             // 若已通过配置指定了 claudePath，则优先使用并校验
             if (this.claudeExecutablePath) {
@@ -585,6 +631,11 @@ class ClaudeAutoCommit {
 	}
 
 	async run() {
+		/**
+		 * 中文说明：CLI 主执行流程。
+		 * 1) 预检（配置/Git/claude） 2) 变更检测与采集 3) 模板或 SDK 生成
+		 * 4) 根据模式提交/推送 5) 可选输出统计 6) 结构化日志收尾
+		 */
 		const totalStart = this.verbose ? process.hrtime.bigint() : null;
 
 		try {
@@ -700,7 +751,7 @@ class ClaudeAutoCommit {
 				// 総実行時間を表示
 				if (totalStart) {
 					const totalEnd = process.hrtime.bigint();
-					const totalDuration = Number(totalEnd - totalStart) / 1e6; // ミリ秒
+					const totalDuration = Number(totalEnd - totalStart) / 1e6; // 毫秒
 					console.log(
 						`\n⏱️  Total execution time: ${totalDuration.toFixed(2)}ms`
 					);
@@ -739,7 +790,7 @@ function parseArgs() {
 			case "-t":
 			case "--type":
 				options.commitType = args[++i];
-				options.conventionalCommit = true; // 自動的にconventional形式を有効化
+				options.conventionalCommit = true; // 自动启用 Conventional 提交格式
 				break;
 			case "-d":
 			case "--dry-run":
@@ -757,7 +808,7 @@ function parseArgs() {
 				options.templateName = args[++i];
 				break;
 			case "--save-template":
-				// 引数を消費しない（run()メソッドで処理）
+				// 不在此处消费参数（在 run() 中处理）
 				break;
 			case "--list-templates":
 				(async () => {
@@ -829,9 +880,10 @@ export async function main() {
 	const options = parseArgs();
 	const autoCommit = new ClaudeAutoCommit(options);
 	try {
+		// 中文注释：统一入口，仅调度主流程；异常在此层集中处理
 		await autoCommit.run();
 	} catch (error) {
-		// 统一的致命错误兜底
+		// 中文注释：统一的致命错误兜底
 		console.error("Fatal error:", error);
 		process.exit(1);
 	}

@@ -15,7 +15,7 @@
 
 </div>
 
-Language: [日本語](../ja/README.md) | [中文](../../README.md)
+Language: [日本語](../ja/README.md) | [中文](../zh-CN/README.md)
 
 Claude Auto-Commit integrates AI-powered commit message generation into your Git workflow. It analyzes your changes and produces high-quality, contextual messages using Claude Code SDK.
 
@@ -115,4 +115,3 @@ MIT License. See [LICENSE](../../LICENSE).
 Made with ❤️ for the developer community
 
 [Report Issues](https://github.com/ticoAg/claude-auto-commit/issues) · [Request Features](https://github.com/ticoAg/claude-auto-commit/issues/new?template=feature_request.md)
-

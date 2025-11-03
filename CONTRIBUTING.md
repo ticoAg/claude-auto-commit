@@ -33,29 +33,26 @@ Thank you for your interest in contributing to Claude Auto-Commit! We welcome co
 git clone https://github.com/ticoAg/claude-auto-commit.git
 cd claude-auto-commit
 
-# Make the script executable
-chmod +x src/claude-auto-commit.sh
+# Install dependencies (production is enough for CLI usage)
+npm install --production
 
-# Test the script
-./src/claude-auto-commit.sh --help
+# Verify the CLI
+node src/claude-auto-commit.js --help
 ```
 
 #### Testing Your Changes
 Before submitting a pull request, please test your changes:
 
 ```bash
-# Test basic functionality
-./src/claude-auto-commit.sh --dry-run
+# Test basic functionality (dry-run)
+node src/claude-auto-commit.js --dry-run
 
-# Test with different options
-./src/claude-auto-commit.sh --dry-run --summary -l en -e
+# Test with options
+node src/claude-auto-commit.js -l zh -e -c -t feat --dry-run
 
-# Test template system
-./src/claude-auto-commit.sh --save-template test "Test: {description}"
-./src/claude-auto-commit.sh --template test --dry-run
-
-# Test history analysis
-./src/claude-auto-commit.sh --analyze-history
+# Template system
+node src/claude-auto-commit.js --dry-run --save-template test
+node src/claude-auto-commit.js --template test
 ```
 
 #### Pull Request Process
@@ -70,12 +67,11 @@ Before submitting a pull request, please test your changes:
 
 ## 📝 Code Style Guidelines
 
-### Shell Script Best Practices
-- Use meaningful variable names
-- Add comments for complex logic
-- Quote variables properly: `"$VARIABLE"`
-- Use `set -e` for error handling where appropriate
-- Follow existing indentation (2 spaces)
+### JavaScript/Node Guidelines
+- Use ES Modules and absolute imports when possible
+- Add concise comments for non-trivial logic
+- Keep CLI output user-oriented; log internals under `--verbose`
+- Prefer synchronous design unless a clear bottleneck exists
 
 ### Commit Message Format
 We use conventional commits for consistency:
@@ -111,7 +107,7 @@ docs: update installation instructions
 
 ## 📋 Release Process
 
-1. Update version in `src/claude-auto-commit.sh`
+1. Update version in `package.json` (if applicable)
 2. Update CHANGELOG.md
 3. Create and test release
 4. Tag version: `git tag v0.0.x`

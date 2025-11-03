@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Claude Auto-Commit Hero](./docs/images/hero-banner.png)
+![Claude Auto-Commit Hero](../images/hero-banner.png)
 
 🤖 **使用 Claude Code SDK 的 AI 驱动 Git 提交消息生成器**
 
@@ -15,7 +15,7 @@
 
 </div>
 
-**语言**: [简体中文](./docs/zh-CN/README.md) | [English](./docs/en-US/README.md) | [日本語](./docs/ja/README.md)
+**语言**: [English](../en-US/README.md) | [日本語](../ja/README.md)
 
 Claude Auto-Commit 是一个开源命令行工具，将 AI 驱动的提交消息生成集成到您的 Git 工作流程中。通过分析您的代码更改，使用 Claude Code SDK 生成高质量、可靠且具备上下文的提交消息。
 
@@ -23,7 +23,7 @@ Claude Auto-Commit 是一个开源命令行工具，将 AI 驱动的提交消息
 
 <div align="center">
 
-![Before and After Comparison](./docs/images/demo-before-after-english.png)
+![Before and After Comparison](../images/demo-before-after-english.png)
 
 *告别模糊的提交消息。让Claude AI编写有意义的提交，讲述您代码的故事。*
 

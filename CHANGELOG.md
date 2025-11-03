@@ -32,7 +32,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🛠️ 安装脚本更新：`install.sh` 默认生成 YAML 配置；若检测到 JSON，打印迁移提示且保留原文件。
 - 💬 CLI/帮助文案更新：`bin/claude-auto-commit` 与 `--help` 输出增加“YAML 优先 / JSON 兼容（deprecated）”说明。
 - 🧪 内部提示：在读取 JSON 配置时输出一次性中文警告，并记录配置来源（verbose 时显示）。
-- 🗂️ 新增文档：`docs/local-validation.md` 提供“方案 2：手动克隆 + 软链”的本地开发自验流程（含本地裸仓库推送验证）。
+- 🗂️ 新增文档：`docs/zh-CN/local-validation.md` 提供“方案 2：手动克隆 + 软链”的本地开发自验流程（含本地裸仓库推送验证）。
+
+### 文档与清理
+
+- 🗃️ 文档结构：新增语言目录 `docs/zh-CN` 与 `docs/en-US`（中文为主，英文精简版）。
+- 📚 新文档：`docs/zh-CN/实现原理.md`、`docs/en-US/architecture.md`；复制对齐 `reference.md`、`local-validation.md`、`FEATURES.md`、`FAQ.md` 到对应语言目录。
+- 🔗 README 语言入口更新为 `zh-CN` / `en-US`；本地自验链接指向中文路径。
+- 🧹 清理：删除废弃 `src/claude-auto-commit.sh` 与顶层 `CLAUDE.md`（内容已迁移至文档）。
 
 ## [0.1.5] - 2025-11-03
 
