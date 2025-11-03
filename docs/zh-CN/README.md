@@ -183,20 +183,48 @@ npx claude-auto-commit@latest
 
 - v0.1.5（2025-11-03）：默认安装切换为本仓库脚本；移除 NPM 徽章；在主仓库 README 新增上游仓库说明；同步 package.json 元数据。
 
-## ⚙️ 配置（YAML，SDK 版）
+## ⚙️ 配置（仅 YAML）
 
-配置文件路径为 `~/.claude-auto-commit/config.yml`（仅 YAML）。
+配置文件路径为 `~/.claude-auto-commit/config.yml`（仅 YAML）。运行时的命令行参数会覆盖配置文件中的同名字段。
+
+完整示例（可直接复制到 `~/.claude-auto-commit/config.yml`）：
 
 ```yaml
-# Claude Auto Commit 配置（YAML）
-language: en               # en/ja/zh
-useEmoji: false            # 是否在提交消息中使用表情
-conventionalCommit: false  # 是否使用 Conventional Commits 格式
-verbose: false             # 是否启用详细输出
+# Claude Auto-Commit 全量配置示例（YAML）
+# 说明：仅展示当前版本实际生效的字段；未列出的字段即表示不被读取。
+
+# 提交语言（支持：en/ja/zh）
+language: zh
+
+# 是否在提交信息中加入表情
+useEmoji: true
+
+# 是否使用 Conventional Commits 规范（如 feat:/fix:/docs: 等）
+conventionalCommit: true
+
+# 是否输出详细日志（包含分阶段耗时与结构化 trace 日志）
+verbose: false
+
+# （可选）显式指定全局 `claude` 可执行文件路径
+# - 用于你的系统安装了多个 claude，或 PATH 无法正确解析时
+# - 留空或删除该字段则自动从 PATH 解析（which/command -v）
+claudePath: /opt/homebrew/bin/claude
+
+# （可选）是否在提交信息末尾追加来源标识
+# - 默认 true，将追加一行 “自动生成 by claude-auto-commit”
+# - 设为 false 以关闭追加
+appendSignature: true
 ```
 
-说明：
-- 仅支持 YAML；运行时可通过命令行参数覆盖上述默认值。
+字段说明（与代码保持一致）：
+- `language`：字符串，`en/ja/zh` 三选一；默认 `en`。
+- `useEmoji`：布尔，是否在提交信息中加入表情；默认 `false`。
+- `conventionalCommit`：布尔，是否使用约定式提交前缀；默认 `false`。
+- `verbose`：布尔，是否输出详细日志与结构化信息；默认 `false`。
+- `claudePath`：字符串，可选；当存在多个 `claude` 时强制指定其路径。
+- `appendSignature`：布尔，是否在提交末尾追加“来源标识”；默认 `true`。
+
+提示：模板功能不需要在配置文件中设置目录，工具会自动使用 `~/.claude-auto-commit/templates/`。
 
 ## 📖 所有选项（SDK 版）
 
