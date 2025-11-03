@@ -815,7 +815,7 @@ function parseArgs() {
 Claude Auto Commit (SDK 版本 ${CLI_VERSION}) / Claude Auto Commit (SDK Version ${CLI_VERSION})
 
 用法 / Usage:
-  node src/claude-auto-commit.js [options]
+  claude-auto-commit [options]
 
 选项 / Options:
   -l, --language <lang>       提交信息语言（en, ja, zh） / Language for commit message (en, ja, zh)
