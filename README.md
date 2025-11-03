@@ -47,12 +47,12 @@ curl -fsSL https://raw.githubusercontent.com/ticoAg/claude-auto-commit/main/scri
 
 **方法3：NPX（Node.js 用户）**
 ```bash
-npx claude-auto-commit
+npx @ticoag/claude-auto-commit
 ```
 
 **方法4：NPM 全局安装**
 ```bash
-npm install -g claude-auto-commit
+npm install -g @ticoag/claude-auto-commit
 ```
 
 ### 基本用法

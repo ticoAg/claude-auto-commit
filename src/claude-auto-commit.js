@@ -14,8 +14,12 @@ import path from "path";
 import os from "os";
 import { randomUUID } from "crypto";
 import YAML from "yaml"; // 读取 YAML 配置
-
-const CLI_VERSION = "v0.1.6";
+// 统一版本来源：从 package.json 读取版本号，避免手工同步
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+// 通过 require 读取 JSON，兼容各 Node 版本的 ESM 行为
+const pkg = require("../package.json");
+const CLI_VERSION = `v${pkg.version}`;
 
 const execAsync = promisify(exec);
 
@@ -46,11 +50,28 @@ class ClaudeAutoCommit {
 		this._configCache = null;
 		this._configCacheTime = 0;
 		this.CONFIG_CACHE_TTL = 5 * 60 * 1000; // 配置缓存 5 分钟
-		// 记录系统上已安装的 `claude` 可执行入口路径（在预检或配置读取时赋值）
-		this.claudeExecutablePath = null;
-		// 是否在提交信息末尾附加来源标识，默认开启
-		this.appendSignature = true;
-	}
+			// 记录系统上已安装的 `claude` 可执行入口路径（在预检或配置读取时赋值）
+			this.claudeExecutablePath = null;
+			// 是否在提交信息末尾附加来源标识，默认开启
+			this.appendSignature = true;
+		}
+
+		// 轻量打印工具：分段标题（仅 verbose 下生效）
+		logSection(title) {
+			if (!this.verbose) return;
+			const line = "=".repeat(64);
+			console.log(`\n${line}\n${title}\n${line}`);
+		}
+
+		// 将提交信息以清晰的分隔块打印（所有模式下都生效）
+		printCommitBlock(message) {
+			const line = "=".repeat(64);
+			console.log(`\n${line}`);
+			console.log("生成的提交信息");
+			console.log("");
+			console.log(message);
+			console.log(line);
+		}
 
 	// 性能测量工具：用于 --verbose 模式输出阶段耗时（毫秒）
 	async measure(name, fn) {
@@ -444,63 +465,49 @@ class ClaudeAutoCommit {
 
 	buildPrompt(changes) {
 		/**
-		 * 中文说明：根据语言/规范/表情/类型拼装提示词，保证只输出“提交信息本身”。
-		 * - `language`: en/ja/zh 三套模板；
-		 * - `conventionalCommit`: 是否启用规范前缀；
-		 * - `useEmoji`: 是否允许表情；
-		 * - `commitType`: 当指定时，固定使用该类型；
+		 * 中文说明：优化后的提示词构造
+		 * - 统一约束：仅输出“提交信息本身”，不要代码块/引号/解释性文字；
+		 * - 结构：第一行为简短主题（<= 72 字符）；空一行；可选 1~3 行要点（每行以 "- " 开头）；
+		 * - 约定式提交：若启用则主题以 `<type>(可选scope): ` 开头；若指定 commitType 则固定使用；
+		 * - 表情：开启时可在主题或要点中酌情加入（不超过 2 个），不开启则不要添加；
 		 */
-		let prompt;
+		let base = "";
+		const cc = this.conventionalCommit;
+		const ctype = this.commitType;
+		const emojiHintZh = this.useEmoji
+			? "如适合，可在主题或要点中加入不超过2个表情符号；"
+			: "不要加入任何表情符号；";
 
-		if (this.language === "ja") {
-			prompt = `以下のGit変更内容に基づいて、適切なコミットメッセージを生成してください。`;
-
-			if (this.conventionalCommit) {
-				prompt += ` Conventional Commits形式（例：feat:, fix:, docs:, style:, refactor:, test:, chore:）を使用してください。`;
-				if (this.commitType) {
-					prompt += ` コミットタイプは "${this.commitType}" を使用してください。`;
-				}
-			}
-
-			if (this.useEmoji) {
-				prompt += ` 適切な絵文字を含めてください。`;
-			}
-
-			prompt += ` コミットメッセージのみを出力してください。説明や追加のテキストは不要です。`;
-		} else if (this.language === "zh") {
-			prompt = `请根据以下 Git 变更内容生成中文提交信息。`;
-
-			if (this.conventionalCommit) {
-				prompt += ` 请遵循 Conventional Commits 规范（例如：feat:、fix:、docs:、style:、refactor:、test:、chore:）。`;
-				if (this.commitType) {
-					prompt += ` 提交类型固定为「${this.commitType}」。`;
-				}
-			}
-
-			if (this.useEmoji) {
-				prompt += ` 在提交信息中加入适当的表情符号。`;
-			}
-
-			prompt += ` 只输出最终的提交信息，不要附加解释或其他文本。`;
+		if (this.language === "zh") {
+			base =
+				"请基于下面的 Git 变更生成中文提交信息：\n" +
+				`- 仅输出提交信息本身，不要解释/引号/Markdown 代码块；\n` +
+				`- 第一行是简短主题（动词开头，<=72 字符）；空一行；随后 1~3 行要点（每行以 \"- \" 开头，可省略）；\n` +
+				(cc ? `- 使用 Conventional Commits 格式；${ctype ? ` 主题类型固定为 \"${ctype}\"；` : ""}\n` : "") +
+				emojiHintZh +
+				"- 不要包含引用他人的说明、模型自我描述或无关文本。";
+		} else if (this.language === "ja") {
+			const emojiHintJa = this.useEmoji ? "- 必要に応じて絵文字を適度に（最大2つ）。\n" : "- 絵文字は使用しない。\n";
+			base =
+				"次のGit変更に基づいて日本語のコミットメッセージを作成してください。\n" +
+				"- 出力はコミットメッセージのみ（説明・引用・コードブロック不可）；\n" +
+				"- 1行目は短い要約（命令形、72文字以内）；空行；続けて1~3行の箇条書き（各行は \"- \" で開始、任意）；\n" +
+				(cc ? `- Conventional Commits形式を使用。${ctype ? ` タイプは \"${ctype}\" に固定。` : ""}\n` : "") +
+				emojiHintJa +
+				"- 不要な説明やメタ情報は含めない。";
 		} else {
-			prompt = `Generate an appropriate git commit message based on the following changes.`;
-
-			if (this.conventionalCommit) {
-				prompt += ` Use Conventional Commits format (e.g., feat:, fix:, docs:, style:, refactor:, test:, chore:).`;
-				if (this.commitType) {
-					prompt += ` Use "${this.commitType}" as the commit type.`;
-				}
-			}
-
-			if (this.useEmoji) {
-				prompt += ` Include appropriate emojis.`;
-			}
-
-			prompt += ` Output only the commit message. No explanation or additional text needed.`;
+			const emojiHintEn = this.useEmoji ? "- If appropriate, include up to 2 emojis.\n" : "- Do not include emojis.\n";
+			base =
+				"Generate an English commit message from the following Git changes.\n" +
+				"- Output only the commit message: no quotes, no explanations, no Markdown code fences;\n" +
+				"- Structure: one short subject line (imperative, <=72 chars), then a blank line, then 1-3 bullet points (each starts with \"- \"; optional);\n" +
+				(cc ? `- Use Conventional Commits;${ctype ? ` enforce type \"${ctype}\";` : ""}\n` : "") +
+				emojiHintEn +
+				"- Do not include model meta-commentary or unrelated text.";
 		}
 
+		let prompt = base;
 		prompt += `\n\nChanges:\n${changes}`;
-
 		return prompt;
 	}
 
@@ -602,13 +609,16 @@ class ClaudeAutoCommit {
 		}
 	}
 
-	async run() {
+    async run() {
 		/**
 		 * 中文说明：CLI 主执行流程。
 		 * 1) 预检（配置/Git/claude） 2) 变更检测与采集 3) 模板或 SDK 生成
 		 * 4) 根据模式提交/推送 5) 可选输出统计 6) 结构化日志收尾
 		 */
 		const totalStart = this.verbose ? process.hrtime.bigint() : null;
+
+		// 在 verbose 模式下先输出一段可视分隔，包含 trace_id
+		this.logSection(`启动 | trace_id=${this.traceId}`);
 
 		try {
 			console.log(
@@ -686,15 +696,15 @@ class ClaudeAutoCommit {
 
 				// 根据配置在消息末尾增加来源标识（避免重复追加）
 				if (this.appendSignature) {
-					const signature = "自动生成 by claude-auto-commit";
+					const signature = "auto generated by @ticoag/claude-auto-commit";
 					const trimmed = commitMessage.trimEnd();
 					if (!trimmed.endsWith(signature)) {
 						commitMessage = `${trimmed}\n\n${signature}`;
 					}
 				}
 
-				console.log(`\n📝 Generated commit message:`);
-				console.log(`"${commitMessage}"`);
+				// 以分隔块突出显示生成的提交信息（无外层引号）
+				this.printCommitBlock(commitMessage);
 
 			if (this.dryRun) {
 				console.log("\n🔍 Dry run mode - commit not created");

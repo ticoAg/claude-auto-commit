@@ -1,5 +1,5 @@
 {
-  "name": "claude-auto-commit",
+  "name": "@ticoag/claude-auto-commit",
   "version": "0.1.6",
   "description": "AI-powered Git commit message generator using Claude Code SDK",
   "main": "src/claude-auto-commit.js",
@@ -11,7 +11,8 @@
     "start": "node src/claude-auto-commit.js",
     "commit": "node src/claude-auto-commit.js",
     "dev": "node --watch src/claude-auto-commit.js",
-    "test": "node test/test.js"
+    "test": "node test/test.js",
+    "release": "node scripts/release.mjs"
   },
   "keywords": [
     "claude",
@@ -59,4 +60,8 @@
     "url": "https://github.com/ticoAg/claude-auto-commit/issues"
   },
   "homepage": "https://github.com/ticoAg/claude-auto-commit#readme"
+  ,
+  "publishConfig": {
+    "access": "public"
+  }
 }

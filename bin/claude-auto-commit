@@ -6,16 +6,22 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// 统一版本来源：从 package.json 读取版本号，避免手工同步
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const pkg = require("../package.json");
+const CLI_VERSION = `v${pkg.version}`;
+
 // Handle version and help commands before importing main script
 const args = process.argv.slice(2);
 if (args.includes("--version")) {
-    console.log("Claude Auto Commit v0.1.6");
+    console.log(`Claude Auto Commit ${CLI_VERSION}`);
     process.exit(0);
 }
 
 if (args.includes("--help") || args.includes("-h")) {
     console.log(`
-Claude Auto Commit (SDK Version v0.1.6)
+Claude Auto Commit (SDK Version ${CLI_VERSION})
 
 Usage: claude-auto-commit [options]
 
