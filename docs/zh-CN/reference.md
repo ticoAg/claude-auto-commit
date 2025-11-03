@@ -52,7 +52,7 @@ claude-auto-commit --dry-run --save-template hotfix
 | `--template <name>`      |        | 使用已保存模板                         | 无       |
 | `--save-template <name>` |        | 将生成结果保存为模板（需 `--dry-run`） | 无       |
 | `--list-templates`       |        | 列出已保存模板                         | -        |
-| `--help`                 | `-h`   | 显示帮助信息                           | -        |
+| `--help`                 | `-h`   | 显示帮助信息（中英双语，中文优先）     | -        |
 | `--version`              |        | 显示版本信息                           | -        |
 
 ## 主要能力

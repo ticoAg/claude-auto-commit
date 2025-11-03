@@ -94,7 +94,7 @@ Notes:
 | `--save-template <name>` | Save template (dry-run only) | - |
 | `--list-templates` | List available templates | - |
 | `--version` | Show version | - |
-| `-h, --help` | Show help | - |
+| `-h, --help` | Show help (bilingual, Chinese-first) | - |
 
 ## 🤝 Contributing
 

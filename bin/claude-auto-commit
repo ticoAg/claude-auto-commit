@@ -20,26 +20,28 @@ if (args.includes("--version")) {
 }
 
 if (args.includes("--help") || args.includes("-h")) {
+    // 中文优先的双语帮助文本；英文仅作补充，便于国际用户理解
     console.log(`
-Claude Auto Commit (SDK Version ${CLI_VERSION})
+Claude Auto Commit (SDK 版本 ${CLI_VERSION}) / Claude Auto Commit (SDK Version ${CLI_VERSION})
 
-Usage: claude-auto-commit [options]
+用法 / Usage:
+  claude-auto-commit [options]
 
-Options:
-  -l, --language <lang>       Language for commit message (en, ja, zh)
-  -e, --emoji                Include emojis in commit message
-  -c, --conventional         Use Conventional Commits format
-  -t, --type <type>          Specify commit type (feat, fix, docs, etc.)
-  -d, --dry-run              Preview commit message without creating commit
-  -v, --verbose              Verbose output
-  -p, --push                 Push changes after commit
-  --template <name>          Use saved template
-  --save-template <name>     Save generated message as template (dry-run only)
-  --list-templates           List available templates
-  --version                  Show version information
-  -h, --help                 Show this help message
+选项 / Options:
+  -l, --language <lang>       提交信息语言（en, ja, zh） / Language for commit message (en, ja, zh)
+  -e, --emoji                 在提交信息中包含表情 / Include emojis in commit message
+  -c, --conventional          使用 Conventional Commits 规范 / Use Conventional Commits format
+  -t, --type <type>           指定提交类型（feat, fix, docs 等）/ Specify commit type (feat, fix, docs, etc.)
+  -d, --dry-run               仅预览提交信息，不创建提交 / Preview commit message without creating commit
+  -v, --verbose               输出详细日志 / Verbose output
+  -p, --push                  提交后自动推送 / Push changes after commit
+  --template <name>           使用已保存模板 / Use saved template
+  --save-template <name>      将生成的信息保存为模板（仅 dry-run）/ Save generated message as template (dry-run only)
+  --list-templates            列出可用模板 / List available templates
+  --version                   显示版本信息 / Show version information
+  -h, --help                  显示帮助信息 / Show this help message
 
-Examples:
+示例 / Examples:
   claude-auto-commit
   claude-auto-commit -l ja -e -c
   claude-auto-commit -l zh -e -c
@@ -47,9 +49,9 @@ Examples:
   claude-auto-commit --dry-run --save-template my-template
   claude-auto-commit --template my-template
 
-Configuration:
-  Preferred: ~/.claude-auto-commit/config.yml (YAML)
-  Compatible: ~/.claude-auto-commit/config.json (JSON, deprecated)
+配置 / Configuration:
+  推荐 / Preferred: ~/.claude-auto-commit/config.yml (YAML)
+  兼容 / Compatible: ~/.claude-auto-commit/config.json (JSON, deprecated)
   `);
     process.exit(0);
 }

@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### 变更
+// 2025-11-03
+- 💬 帮助命令（-h/--help）注释改为中英双语显示（中文优先）；`bin/claude-auto-commit` 与 `src/claude-auto-commit.js` 文案保持一致。
 
 ## [0.1.6] - 2025-11-03
 
